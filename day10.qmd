@@ -1,0 +1,102 @@
+---
+title: "eds221-day10-activities"
+format: html
+editor: visual
+---
+
+## Reading in Data 
+
+```{r}
+library(tidyverse)
+library(here)
+library(lubridate)
+```
+
+```{r}
+madison_ice_data <- read.csv(here("ntl33_v7.csv"), na = "-999")
+madison_weather_data <- read.csv(here("ntl20_v6.csv"))
+```
+
+-   Create a visualization that compares ice duration across different lakes in the Madison Lake Area. Include both the actual ice duration values *and* some representation of summary statistics for each lake. Careful if you use a boxplot over a jitter or beeswarm - what values might be doubly represented? Can you find an argument that would help you remove those from the boxplot?
+
+```{r}
+ice_means <- madison_ice_data %>% 
+  group_by(lakeid) %>% 
+  summarise(mean_ice_duration = mean(ice_duration, na.rm = TRUE))
+
+
+ggplot(ice_means, aes(x = lakeid, y = mean_ice_duration)) + geom_col()
+```
+
+-   Find the mean ice cover duration in Madison Lake Area by year (i.e., you\'ll only be grouping by the year variable here). Understanding check: what are you finding the mean of here? Why are there multiple observations for each year?)
+
+    ```{r}
+    ice_means2 <- madison_ice_data %>% 
+      group_by(year4) %>% 
+      summarise(mean_ice_duration = mean(ice_duration, na.rm = TRUE))
+
+
+    ```
+
+-   Create an exploratory visualization of mean ice cover duration by year for the Madison Lake Area. Add a sentence or two below this exploratory graph describing the overall trend(s) you observe.
+
+    ```{r}
+    ggplot(ice_means2, aes(x = year4, y = mean_ice_duration)) +
+      geom_line(color = "salmon") +
+      labs(x = "Year", y = "Mean of Ice Duration (in days)")
+
+    #In this graph, the overall duration of days of ice in the Madison Lake area is decreasing from the years 1850 to 2019.
+    ```
+
+-   Find the mean air temperature (using the daily average air temperature - adjusted) in Madison Lake Area **by year** using **only observations from winter months (December, January, February)**
+
+    ```{r}
+    mean_air_temp_madison <- 
+      madison_weather_data %>% 
+      group_by(year4, month) %>% 
+      filter(month == 12 | month == 1 | month == 2) %>% 
+      summarize(mean_air_temp = mean(ave_air_temp_adjusted, na.rm = TRUE))
+    ```
+
+-   Create an exploratory visualization of mean winter temperatures for the Madison Lake Area. Add a sentence or two below this exploratory graph describing the overall trend(s) you observe.
+
+    ```{r}
+    mean_air_temp_madison %>% 
+      ggplot(aes(x = year4, y = mean_air_temp)) + 
+      geom_jitter(aes(color = month)) + 
+      facet_wrap(vars(month))
+
+    #In this graph, we are looking at the mean air temperature in the months December, January, and February from the years 1850 to 2019 in the Madison Lake Area Region. We can see that the mean air temperature seems to be trending upward, indicating that temperatures are getting warmer in recent years. 
+    ```
+
+-   Join the mean winter air temperatures to the mean ice cover duration data you found above
+
+    ```{r}
+    new_madison_data <- full_join(madison_ice_data, madison_weather_data)
+    ```
+
+-   Create an exploratory scatterplot of mean winter temperatures versus mean ice duration. Add a sentence or two below this exploratory graph describing the overall trend(s) you observe.
+
+    ```{r}
+    madison_combined <- 
+      new_madison_data %>% 
+      group_by(year4) %>% 
+      summarize(mean_air_temp = mean(ave_air_temp_adjusted, na.rm = TRUE), mean_ice_duration = mean(ice_duration, na.rm = TRUE))
+
+    madison_combined %>% 
+    ggplot(aes(x = mean_air_temp, y = mean_ice_duration)) + 
+      geom_jitter(aes(color = year4))
+    ```
+
+-   Explore thaw dates since 1970. Create a subset of the ice cover duration data since 1970 (ok to include 1970), then convert the `ice_off` column to a `Date`. Use `lubridate::yday()` to pull the numeric *day of the year* from that Date. Create an exploratory plot of the ice off day (numeric day-of-the-year) from 1970 - present. Add a sentence or two below this exploratory graph describing the overall trend(s) you observe.
+
+```{r}
+madison_ice_data %>% 
+  filter(year4 >= 1970) %>% 
+  day = lubridate::d(ice_off)
+
+
+madison_ice_data %>% 
+  ggplot(aes(x = year4, y = day)) + 
+  geom_point()
+```
